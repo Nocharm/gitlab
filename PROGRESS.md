@@ -12,3 +12,6 @@
 - 설계 스펙 작성: `docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`.
   shell executor + 동적 포트 할당 + 데이터 라이프사이클(reset/destroy/purge) 합의.
   reconciler(repo 실삭제 자동 정리)는 다음 phase로 분리.
+- 구현 계획 작성: `docs/superpowers/plans/2026-06-03-gitlab-docker-ci-deploy.md`.
+  Task 0~8(레지스트리 로직 TDD → deploy-app → 러너 이미지 → compose → 스크립트 →
+  데모앱 → 검증 런북). 로컬 검증(bats/shellcheck/compose config)과 71서버 수동 검증 분리.
