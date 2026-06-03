@@ -22,11 +22,19 @@ Infra-as-Code 저장소.
 > ⚠️ docker 소켓 마운트 = 호스트 root 권한. 이 러너에 파이프라인을 돌릴 수 있는 사람은
 > 사실상 71서버 root 권한을 가진다. 위 가드레일로 완화한다.
 
-## 상태
+## 셋업 (71서버)
 
-설계 완료 · 구현 착수 전. 전체 설계는
-[`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md)
-참고. 구현 진행에 따라 setup/배포 명령을 이 문서에 채운다.
+```bash
+cp .env.example .env          # 값 채우기 (GID는 `getent group docker`로 확인)
+docker compose --env-file .env -f compose/gitlab.compose.yml up -d   # GitLab
+docker compose --env-file .env -f compose/runner.compose.yml up -d   # Runner
+bash scripts/register_runner.sh                                      # 러너 등록
+```
+
+GitLab UI → 프로젝트/그룹 CI/CD → Runners 에서 토큰을 발급해 `.env`의 `RUNNER_TOKEN`에 넣는다.
+앱 repo에는 `examples/sample-app/.gitlab-ci.yml`을 참고한 `.gitlab-ci.yml`을 둔다.
+전체 설계는 [`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md),
+검증 절차는 [`docs/RUNBOOK.md`](docs/RUNBOOK.md) 참고.
 
 ## 계획된 구조
 
