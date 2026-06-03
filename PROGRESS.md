@@ -2,6 +2,14 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-03 (디버깅: 러너 생성 UI 에러)
+
+- 증상: GitLab UI에서 러너 생성 클릭 시 상세(토큰) 페이지로 못 넘어가고 에러.
+- 원인: GitLab 19.0.1에서 `runnerCreate` mutation은 성공(러너 DB 생성됨)하나 생성 직후
+  register 페이지(프론트엔드 webpack 에셋/렌더)가 깨짐. 서버 예외는 없음 = GitLab 자체 UI 이슈.
+- 해결: UI 우회 — `gitlab-rails runner 'puts Ci::Runner.last.token'`로 토큰 직접 추출.
+  `docs/LOCAL-TEST.md` 4단계를 콘솔 토큰 추출 방식으로 보강.
+
 ## 2026-06-03 (로컬 UI 테스트 지원)
 
 - `master`→`main` 리네임 + 구현 브랜치 머지(FF).

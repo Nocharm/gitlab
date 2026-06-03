@@ -60,15 +60,20 @@ docker exec gitlab cat /etc/gitlab/initial_root_password   # 24시간 내 유효
 
 ## 4. 러너 등록
 
-1. UI → 프로젝트 `sample-app` → **Settings → CI/CD → Runners → New project runner**.
+1. UI → **Admin → CI/CD → Runners → New instance runner** (또는 프로젝트 runner).
    - Tags: `shell-71` 입력
    - **"Run untagged jobs" 체크 해제** (태그 강제)
-   - Create → 표시되는 **authentication token**(`glrt-...`) 복사.
-2. `.env`의 `RUNNER_TOKEN=glrt-...` 에 붙여넣기.
-3. 러너 컨테이너 기동 + 등록:
+   - Create.
+2. **토큰 받기.** 생성 직후 토큰 페이지가 보이면 거기 `glrt-...`를 복사한다.
+   > ⚠️ GitLab 일부 버전(예: 19.0.x)은 생성은 되지만 **토큰 페이지가 에러**나 안 보일 수 있다.
+   > 그럴 땐 UI를 우회해 콘솔로 직접 추출 (러너는 이미 생성돼 있음):
+   > ```bash
+   > docker exec gitlab gitlab-rails runner 'puts Ci::Runner.last.token'
+   > ```
+3. `.env`의 `RUNNER_TOKEN=glrt-...` 에 붙여넣기.
+4. 러너 컨테이너 기동 + 등록:
    ```bash
    docker compose --env-file .env -f compose/runner.compose.yml -f compose/runner.local.yml up -d --build
-   docker exec -e CI_SERVER_URL -e RUNNER_TOKEN -e RUNNER_TAGS gitlab-runner true 2>/dev/null || true
    set -a; source .env; set +a          # register 스크립트가 쓸 env 로드
    bash scripts/register_runner.sh
    docker exec gitlab-runner gitlab-runner verify     # online 확인
