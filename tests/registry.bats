@@ -5,7 +5,7 @@ setup() {
   source "$BATS_TEST_DIRNAME/../scripts/lib/registry.sh"
   REG="$(mktemp)"; echo '{}' > "$REG"
 }
-teardown() { rm -f "$REG" "${REG}.lock"; }
+teardown() { rm -f "$REG"; }
 
 @test "registry_port: 미등록 key는 빈 문자열" {
   run registry_port "$REG" "grp/app"
@@ -60,4 +60,18 @@ teardown() { rm -f "$REG" "${REG}.lock"; }
 @test "parse_volumes: 빈 spec은 빈 출력" {
   run parse_volumes "app" ""
   [ -z "$output" ]
+}
+
+@test "port_in_registry: 미할당 포트는 비감지" {
+  registry_set "$REG" "grp/app" 9000 "app" "single"
+  run port_in_registry "$REG" 9999
+  [ "$status" -ne 0 ]
+}
+
+@test "registry_set: 같은 key 재설정 시 덮어씀" {
+  registry_set "$REG" "grp/app" 9000 "app" "single"
+  registry_set "$REG" "grp/app" 9001 "app" "compose"
+  [ "$(jq 'keys | length' "$REG")" -eq 1 ]
+  run registry_port "$REG" "grp/app"
+  [ "$output" -eq 9001 ]
 }
