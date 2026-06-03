@@ -30,3 +30,6 @@ dist/
 .vscode/
 .idea/
 *.swp
+
+# GitLab Runner (토큰 포함 — 커밋 금지)
+runner/config.toml
