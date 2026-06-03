@@ -1,0 +1,24 @@
+# GitLab Runner — runner/Dockerfile 이미지를 빌드해 기동.
+# 호스트 docker.sock 마운트 + docker 그룹 GID 로 호스트 docker 데몬 제어.
+# /srv/deploy 는 registry.json 영속 저장 위치(호스트 공유).
+services:
+  runner:
+    build:
+      context: ..
+      dockerfile: runner/Dockerfile
+    image: gitlab-runner-deploy:latest
+    container_name: gitlab-runner
+    restart: unless-stopped
+    group_add:
+      - "${DOCKER_GID}"            # 호스트 docker 그룹 GID — 소켓 접근 권한
+    environment:
+      DEPLOY_PORT_MIN: ${DEPLOY_PORT_MIN}
+      DEPLOY_PORT_MAX: ${DEPLOY_PORT_MAX}
+      DEPLOY_REGISTRY: /srv/deploy/registry.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner_config:/etc/gitlab-runner
+      - /srv/deploy:/srv/deploy
+
+volumes:
+  runner_config:
