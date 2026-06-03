@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# deploy-app — CI 공유 배포 헬퍼. 동적 포트 할당 + 교체/초기화/삭제.
+# 사용: deploy-app <name> [--compose] [--reset|--destroy|--purge]
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/registry.sh
+source "$SCRIPT_DIR/lib/registry.sh"
+
+REGISTRY="${DEPLOY_REGISTRY:-/srv/deploy/registry.json}"
+PORT_MIN="${DEPLOY_PORT_MIN:-9000}"
+PORT_MAX="${DEPLOY_PORT_MAX:-9099}"
+APP_PORT="${APP_PORT:-80}"
+COMPOSE_FILE="${DEPLOY_COMPOSE_FILE:-docker-compose.yml}"
+KEY="${CI_PROJECT_PATH:?CI_PROJECT_PATH required}"
+
+usage() { echo "usage: deploy-app <name> [--compose] [--reset|--destroy|--purge]" >&2; exit 2; }
+
+name="${1:-}"; [ -n "$name" ] || usage; shift
+action="deploy"; use_compose=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --compose) use_compose=1 ;;
+    --reset)   action="reset" ;;
+    --destroy) action="destroy" ;;
+    --purge)   action="purge" ;;
+    *) usage ;;
+  esac
+  shift
+done
+
+mkdir -p "$(dirname "$REGISTRY")"
+registry_init "$REGISTRY"
+# 동시 배포 직렬화. flock 없는 환경(로컬 mac 테스트)은 건너뜀 — 러너는 Linux라 항상 적용됨.
+if command -v flock >/dev/null 2>&1; then exec 9>"${REGISTRY}.lock"; flock 9; fi
+
+# destroy/purge는 저장된 타입으로 동작 분기
+stored_type="$(registry_type "$REGISTRY" "$KEY")"
+[ "$stored_type" = "compose" ] && use_compose=1
+
+teardown_container() {
+  if [ "$use_compose" -eq 1 ]; then
+    COMPOSE_PROJECT_NAME="$name" docker compose -f "$COMPOSE_FILE" down >/dev/null 2>&1 || true
+  else
+    docker rm -f "$name" >/dev/null 2>&1 || true
+  fi
+}
+teardown_volumes() {                       # xargs -r 미사용(BSD/mac 호환): 빈 목록은 직접 가드
+  local vols
+  vols="$(docker volume ls -q --filter "name=^${name}_" 2>/dev/null || true)"
+  [ -n "$vols" ] && echo "$vols" | xargs docker volume rm >/dev/null 2>&1 || true
+}
+
+if [ "$action" = "destroy" ]; then
+  teardown_container; registry_remove "$REGISTRY" "$KEY"
+  echo "destroyed $name (volumes preserved)"; exit 0
+fi
+if [ "$action" = "purge" ]; then
+  teardown_container; teardown_volumes; registry_remove "$REGISTRY" "$KEY"
+  echo "purged $name (container + volumes + registry)"; exit 0
+fi
+if [ "$action" = "reset" ]; then
+  teardown_container; teardown_volumes    # 볼륨 비우고 아래에서 재배포
+fi
+
+# 포트 확보 (없으면 할당)
+port="$(registry_port "$REGISTRY" "$KEY")"
+if [ -z "$port" ]; then
+  port="$(find_free_port "$REGISTRY" "$PORT_MIN" "$PORT_MAX")"
+fi
+
+if [ "$use_compose" -eq 1 ]; then
+  registry_set "$REGISTRY" "$KEY" "$port" "$name" "compose"
+  COMPOSE_PROJECT_NAME="$name" docker compose -f "$COMPOSE_FILE" up -d --build
+else
+  registry_set "$REGISTRY" "$KEY" "$port" "$name" "single"
+  tag="${CI_COMMIT_SHORT_SHA:-latest}"
+  docker build -t "${name}:${tag}" .
+  docker rm -f "$name" >/dev/null 2>&1 || true     # 컨테이너만 교체 (볼륨 유지)
+  # shellcheck disable=SC2046  # parse_volumes 출력은 의도적 단어 분할
+  docker run -d --name "$name" -p "${port}:${APP_PORT}" \
+    $(parse_volumes "$name" "${DEPLOY_VOLUMES:-}") \
+    --restart unless-stopped "${name}:${tag}"
+fi
+
+# 검증: 컨테이너 running 확인 (호스트 docker 기준 — 러너 netns와 무관). 최대 10초.
+verify_running() {
+  if [ "$use_compose" -eq 1 ]; then
+    COMPOSE_PROJECT_NAME="$name" docker compose -f "$COMPOSE_FILE" ps --status running -q | grep -q .
+  else
+    [ "$(docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null)" = "true" ]
+  fi
+}
+for _ in $(seq 1 10); do verify_running && break; sleep 1; done
+verify_running || { echo "deploy failed: $name not running" >&2; exit 1; }
+echo "deployed $name -> :${port}"
