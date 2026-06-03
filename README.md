@@ -34,7 +34,8 @@ bash scripts/register_runner.sh                                      # 러너 �
 GitLab UI → 프로젝트/그룹 CI/CD → Runners 에서 토큰을 발급해 `.env`의 `RUNNER_TOKEN`에 넣는다.
 앱 repo에는 `examples/sample-app/.gitlab-ci.yml`을 참고한 `.gitlab-ci.yml`을 둔다.
 전체 설계는 [`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md),
-검증 절차는 [`docs/RUNBOOK.md`](docs/RUNBOOK.md) 참고.
+서버 검증은 [`docs/RUNBOOK.md`](docs/RUNBOOK.md), **서버 없이 로컬(mac)에서 UI 푸시→배포 시험**은
+[`docs/LOCAL-TEST.md`](docs/LOCAL-TEST.md) 참고.
 
 ## 계획된 구조
 

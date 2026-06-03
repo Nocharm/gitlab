@@ -1,0 +1,13 @@
+# 로컬(mac Docker Desktop) 테스트용 오버라이드. 서버용 runner.compose.yml은 그대로 두고 덧댄다:
+#   docker compose --env-file .env -f compose/runner.compose.yml -f compose/runner.local.yml up -d --build
+# 차이: (1) 러너가 호스트 published GitLab 포트로 도달하도록 host-gateway 매핑,
+#       (2) mac은 /srv 바인드 불가 → registry를 named 볼륨으로.
+services:
+  runner:
+    extra_hosts:
+      - "${GITLAB_HOSTNAME}:host-gateway"
+    volumes:
+      - deploy_registry:/srv/deploy          # 같은 mount target(/srv/deploy)이라 base 바인드를 대체
+
+volumes:
+  deploy_registry:

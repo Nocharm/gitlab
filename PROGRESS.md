@@ -2,6 +2,13 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-03 (로컬 UI 테스트 지원)
+
+- `master`→`main` 리네임 + 구현 브랜치 머지(FF).
+- 서버 접근 불가 → 로컬 Docker Desktop에서 GitLab UI 푸시 배포를 재현하기 위해
+  `compose/runner.local.yml`(host-gateway 매핑 + registry named 볼륨) + `docs/LOCAL-TEST.md` 추가.
+  왜: mac은 컨테이너 localhost 격리·`/srv` 바인드 불가라 서버용 compose만으론 로컬 재현 불가.
+
 ## 2026-06-03 (Task 2–8)
 
 - Task 2 `scripts/deploy-app`: deploy/reset/destroy/purge + 동적 포트 할당(key=CI_PROJECT_PATH).
