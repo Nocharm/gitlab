@@ -372,8 +372,10 @@ teardown_container() {
     docker rm -f "$name" >/dev/null 2>&1 || true
   fi
 }
-teardown_volumes() {
-  docker volume ls -q --filter "name=^${name}_" | xargs -r docker volume rm >/dev/null 2>&1 || true
+teardown_volumes() {                       # xargs -r 미사용(BSD/mac 호환): 빈 목록은 직접 가드
+  local vols
+  vols="$(docker volume ls -q --filter "name=^${name}_" 2>/dev/null || true)"
+  [ -n "$vols" ] && echo "$vols" | xargs docker volume rm >/dev/null 2>&1 || true
 }
 
 if [ "$action" = "destroy" ]; then
