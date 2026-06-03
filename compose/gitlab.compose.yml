@@ -1,0 +1,24 @@
+# GitLab CE — 71서버 운영 인스턴스. 데이터는 named 볼륨에 영속.
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: unless-stopped
+    hostname: ${GITLAB_HOSTNAME}
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://${GITLAB_HOSTNAME}:${GITLAB_HTTP_PORT}'
+        gitlab_rails['gitlab_shell_ssh_port'] = ${GITLAB_SSH_PORT}
+    ports:
+      - "${GITLAB_HTTP_PORT}:${GITLAB_HTTP_PORT}"
+      - "${GITLAB_SSH_PORT}:22"
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    shm_size: "256m"
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
