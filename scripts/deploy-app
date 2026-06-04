@@ -63,24 +63,45 @@ if [ "$action" = "reset" ]; then
   teardown_container; teardown_volumes    # 볼륨 비우고 아래에서 재배포
 fi
 
-# 포트 확보 (없으면 할당)
-port="$(registry_port "$REGISTRY" "$KEY")"
-if [ -z "$port" ]; then
-  port="$(find_free_port "$REGISTRY" "$PORT_MIN" "$PORT_MAX")"
-fi
+# 포트 결정: 기존 매핑 있으면 그 포트 고정, 없으면 범위에서 빈 포트.
+existing_port="$(registry_port "$REGISTRY" "$KEY")"
+tag="${CI_COMMIT_SHORT_SHA:-latest}"
 
 if [ "$use_compose" -eq 1 ]; then
+  port="${existing_port:-$(find_free_port "$REGISTRY" "$PORT_MIN" "$PORT_MAX")}"
   registry_set "$REGISTRY" "$KEY" "$port" "$name" "compose"
   COMPOSE_PROJECT_NAME="$name" docker compose -f "$COMPOSE_FILE" up -d --build
 else
-  registry_set "$REGISTRY" "$KEY" "$port" "$name" "single"
-  tag="${CI_COMMIT_SHORT_SHA:-latest}"
   docker build -t "${name}:${tag}" .
-  docker rm -f "$name" >/dev/null 2>&1 || true     # 컨테이너만 교체 (볼륨 유지)
-  # shellcheck disable=SC2046  # parse_volumes 출력은 의도적 단어 분할
-  docker run -d --name "$name" -p "${port}:${APP_PORT}" \
-    $(parse_volumes "$name" "${DEPLOY_VOLUMES:-}") \
-    --restart unless-stopped "${name}:${tag}"
+  # 실제 -p 바인드 성공까지 시도 → 레지스트리 밖(비-docker)이 점유한 포트도 자동 회피.
+  run_single() {                       # $1=port  반환 0=성공 2=포트점유 1=기타에러
+    local p="$1"
+    docker rm -f "$name" >/dev/null 2>&1 || true     # 컨테이너만 교체(볼륨 유지)
+    # shellcheck disable=SC2046  # parse_volumes 출력은 의도적 단어 분할
+    if docker run -d --name "$name" -p "${p}:${APP_PORT}" \
+         $(parse_volumes "$name" "${DEPLOY_VOLUMES:-}") \
+         --restart unless-stopped "${name}:${tag}" 2>/tmp/deploy-run.err; then
+      return 0
+    fi
+    grep -qiE 'already allocated|already in use' /tmp/deploy-run.err && return 2
+    cat /tmp/deploy-run.err >&2; return 1
+  }
+  if [ -n "$existing_port" ]; then
+    rc=0; run_single "$existing_port" || rc=$?
+    [ "$rc" -eq 0 ] || { echo "deploy failed: fixed port $existing_port unavailable" >&2; exit 1; }
+    port="$existing_port"
+  else
+    port=""
+    for (( p=PORT_MIN; p<=PORT_MAX; p++ )); do
+      port_in_registry "$REGISTRY" "$p" && continue
+      rc=0; run_single "$p" || rc=$?
+      [ "$rc" -eq 0 ] && { port="$p"; break; }
+      [ "$rc" -eq 2 ] && continue
+      exit 1
+    done
+    [ -n "$port" ] || { echo "no bindable free port in ${PORT_MIN}-${PORT_MAX}" >&2; exit 1; }
+    registry_set "$REGISTRY" "$KEY" "$port" "$name" "single"
+  fi
 fi
 
 # 검증: 컨테이너 running 확인 (호스트 docker 기준 — 러너 netns와 무관). 최대 10초.

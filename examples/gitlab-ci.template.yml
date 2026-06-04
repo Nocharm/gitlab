@@ -1,0 +1,44 @@
+# 자동 배포용 .gitlab-ci.yml 템플릿.
+# 사용법: 이 내용을 당신 프로젝트 루트의 `.gitlab-ci.yml` 로 복사.
+# 전제:
+#   - 레포 루트에 Dockerfile(단일 이미지) 또는 docker-compose.yml(스택)이 있음.
+#   - 사내 GitLab에 `shell-71` 태그 러너가 등록돼 있음.
+#   - protected 브랜치(보통 main)에 push하면 배포됨.
+
+variables:
+  APP_PORT: "80"          # 컨테이너가 listen하는 내부 포트. 호스트 포트는 자동 할당된다.
+  # DEPLOY_VOLUMES: "data:/var/lib/app"   # 영속 데이터 경로(여러 개면 콤마). 없으면 무상태 앱.
+
+stages: [deploy]
+
+deploy:
+  stage: deploy
+  tags: [shell-71]                            # 사내 배포 러너
+  rules:
+    - if: $CI_COMMIT_REF_PROTECTED == "true"  # protected 브랜치에서만 배포
+  script:
+    - deploy-app "$CI_PROJECT_PATH_SLUG"      # 프로젝트별 고유 이름(그룹-프로젝트). 데이터 보존하며 교체.
+    # compose 스택이면 위 대신:
+    # - deploy-app "$CI_PROJECT_PATH_SLUG" --compose
+
+# --- 수동 운영 job (파이프라인 화면에서 ▶ 클릭 실행) ---
+reset:                                        # 데이터 초기화 후 재배포
+  stage: deploy
+  tags: [shell-71]
+  when: manual
+  script:
+    - deploy-app "$CI_PROJECT_PATH_SLUG" --reset
+
+destroy:                                      # 서비스만 내림 (볼륨/데이터 보존)
+  stage: deploy
+  tags: [shell-71]
+  when: manual
+  script:
+    - deploy-app "$CI_PROJECT_PATH_SLUG" --destroy
+
+purge:                                        # 완전 삭제 (컨테이너 + 볼륨 + 포트 반납)
+  stage: deploy
+  tags: [shell-71]
+  when: manual
+  script:
+    - deploy-app "$CI_PROJECT_PATH_SLUG" --purge

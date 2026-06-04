@@ -36,7 +36,8 @@ docker compose --env-file .env -f compose/runner.compose.yml up -d --build    # 
 bash scripts/register_runner.sh                                               # 등록 → online
 ```
 
-앱 repo에는 `examples/sample-app/.gitlab-ci.yml`을 참고한 `.gitlab-ci.yml`을 둔다.
+**앱 팀이 자기 프로젝트를 자동 배포하려면** → [`docs/APP-DEPLOY-GUIDE.md`](docs/APP-DEPLOY-GUIDE.md)
+(템플릿: [`examples/gitlab-ci.template.yml`](examples/gitlab-ci.template.yml)).
 설계: [`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md) ·
 서버 없이 로컬(mac) 시험: [`docs/LOCAL-TEST.md`](docs/LOCAL-TEST.md).
 

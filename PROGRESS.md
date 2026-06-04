@@ -2,6 +2,14 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-04 (포트 충돌 처리 + 앱 배포 가이드)
+
+- deploy-app: 비-docker 프로세스가 점유한 호스트 포트로 충돌(`port is already allocated`).
+  러너 컨테이너는 호스트 netns를 못 봐 사전 탐지 불가 → **실제 `docker run -p` 바인드 성공까지
+  다음 포트로 자동 재시도**하도록 단일 배포 로직 수정. bats 5/5(재시도 케이스 포함).
+- 앱 팀용 자동배포 가이드 `docs/APP-DEPLOY-GUIDE.md` + 템플릿 `examples/gitlab-ci.template.yml`
+  ($CI_PROJECT_PATH_SLUG 사용, deploy/reset/destroy/purge). README에서 링크.
+
 ## 2026-06-04 (서버 배포 중 수정)
 
 - Dockerfile: COPY 후 `sed 's/\r$//'`로 이미지 안 deploy-app/registry.sh를 무조건 LF화

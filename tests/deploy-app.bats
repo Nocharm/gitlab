@@ -69,3 +69,27 @@ EOF
   grep -q "volume rm" "$STATE/calls.log"
   [ "$(jq -r '.["grp/sample"] // "gone"' "$DEPLOY_REGISTRY")" = "gone" ]
 }
+
+@test "포트 점유 시 다음 빈 포트로 재시도" {
+  export DEPLOY_PORT_MIN=9000 DEPLOY_PORT_MAX=9002
+  # docker 스텁: run -p 9000 은 점유 에러, 그 외 포트는 성공
+  cat > "$BINDIR/docker" <<EOF
+#!/usr/bin/env bash
+echo "\$@" >> "$STATE/calls.log"
+case "\$1" in
+  ps) exit 0 ;;
+  inspect) echo "true"; exit 0 ;;
+  run)
+    case "\$*" in
+      *"-p 9000:"*) echo "Bind for 0.0.0.0:9000 failed: port is already allocated" >&2; exit 1 ;;
+      *) exit 0 ;;
+    esac ;;
+  *) exit 0 ;;
+esac
+EOF
+  chmod +x "$BINDIR/docker"
+  run_deploy sample-app
+  [ "$status" -eq 0 ]
+  grep -q "run -d --name sample-app -p 9001:80" "$STATE/calls.log"
+  [ "$(jq -r '.["grp/sample"].port' "$DEPLOY_REGISTRY")" -eq 9001 ]
+}
