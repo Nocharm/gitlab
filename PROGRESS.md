@@ -2,6 +2,12 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-04 (서버 배포 중 수정)
+
+- `register_runner.sh`: GitLab 19 authentication-token 등록은 `--locked/--tag-list/--run-untagged`이
+  reserved → FATAL. 해당 옵션 제거(url/token/executor만). 태그 등은 UI 러너 생성 시 설정.
+- `.gitattributes` 추가(LF 강제) — Windows 경유 전송 시 CRLF로 스크립트 깨지는 문제 방지.
+
 ## 2026-06-04 (71서버 설정 반영)
 
 - 실 배포 대상 사내 71서버 확정. 실제 호스트·포트·GID는 커밋하지 않고 서버 `.env`에만 둠
