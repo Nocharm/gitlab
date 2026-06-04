@@ -1,0 +1,3 @@
+# 모든 텍스트 파일을 LF로 정규화. shell 스크립트·compose·.env는 CRLF면 Linux에서 깨진다
+# (`bash: $'\r': command not found`). Windows 경유 전송 시 재발 방지.
+* text=auto eol=lf
