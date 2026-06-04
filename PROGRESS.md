@@ -4,6 +4,11 @@
 
 ## 2026-06-04 (서버 배포 중 수정)
 
+- 배포 job의 docker 소켓 permission denied: 이미지가 `gitlab-runner run --user gitlab-runner`라
+  **잡은 gitlab-runner(비-root) 유저로 실행** → group_add 989는 데몬에만 붙고 잡 유저엔 없음.
+  → Dockerfile에서 `gitlab-runner` 유저를 호스트 docker GID 그룹에 추가(ARG DOCKER_GID),
+  runner.compose build args로 전달. /srv/deploy 는 호스트에서 쓰기권한 부여 필요(chmod).
+
 - `register_runner.sh`: GitLab 19 authentication-token 등록은 `--locked/--tag-list/--run-untagged`이
   reserved → FATAL. 해당 옵션 제거(url/token/executor만). 태그 등은 UI 러너 생성 시 설정.
 - `.gitattributes` 추가(LF 강제) — Windows 경유 전송 시 CRLF로 스크립트 깨지는 문제 방지.
