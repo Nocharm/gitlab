@@ -19,6 +19,15 @@ set -a; source .env; set +a
 echo "host=$GITLAB_HOSTNAME web=$GITLAB_HTTP_PORT gid=$DOCKER_GID range=$DEPLOY_PORT_MIN-$DEPLOY_PORT_MAX"
 ```
 
+> Windows 경유로 받았다면 `.env`가 CRLF일 수 있다: `tr -d '\r' < .env > .env.new && mv .env.new .env`.
+
+## 1.5 배포 상태 디렉터리 준비 (필수, 1회)
+`registry.json`이 사는 `/srv/deploy`를 배포 job(=`gitlab-runner` 유저)이 쓸 수 있어야 한다:
+```bash
+sudo mkdir -p /srv/deploy && sudo chmod 777 /srv/deploy
+```
+> 안 하면 배포 job이 `registry.json: permission denied` 로 실패한다.
+
 ## 2. GitLab 기동
 ```bash
 docker compose --env-file .env -f compose/gitlab.compose.yml up -d
@@ -75,6 +84,23 @@ docker exec gitlab-runner docker ps >/dev/null && echo "socket OK"             #
 - [ ] job `tags:[shell-71]` == 러너 tags? (불일치 = 1순위)
 - [ ] 러너 "Run untagged" 꺼짐 + job에 태그?
 - [ ] 러너→GitLab 도달(4단계 health 200) / 러너→소켓(socket OK)?
+
+## 트러블슈팅 (실제 겪은 이슈 → 해결)
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `bash: $'\r'` / `/usr/bin/env: 'bash\r'` | 스크립트·`.env`가 CRLF(Windows 경유) | `tr -d '\r' < f > f.t && mv f.t f`. 이미지 안 deploy-app은 Dockerfile이 빌드 때 자동 LF 변환. 근본적으론 사내 PC에서 **fresh clone**(아래) |
+| 배포 job `registry.json: permission denied` | `/srv/deploy`가 root 소유, job은 비-root | `sudo chmod 777 /srv/deploy` (1.5단계) |
+| 배포 job `docker.sock: permission denied` | job이 `gitlab-runner`(비-root) 유저로 도는데 그 유저가 docker GID 그룹에 없음 | Dockerfile이 `gitlab-runner`를 `DOCKER_GID` 그룹에 추가(build arg). `.env`의 DOCKER_GID를 `getent group docker` 값과 맞추고 `up -d --build`. 확인: `docker exec gitlab-runner id gitlab-runner` 에 그 GID |
+| `register` FATAL: `--locked/--tag-list ... is reserved` | GitLab 16.6+ 토큰 등록은 url/token/executor만 허용 | `register_runner.sh`에서 해당 옵션 제거됨. 태그 등은 UI 러너 생성 시 설정 |
+| 러너 생성 후 토큰 상세페이지 에러 | GitLab 19.x 프론트엔드 버그(서버는 정상) | 콘솔로 토큰 추출: `docker exec gitlab gitlab-rails runner 'puts Ci::Runner.last.token'` |
+| `WARN Found orphan container (gitlab)` | 두 compose가 같은 프로젝트로 인식 | 무해. **`--remove-orphans` 절대 금지**(GitLab 컨테이너 삭제됨) |
+| `the url needs to be entered` / `PANIC: ... EOF` | `$CI_SERVER_URL` 미설정 / 여러 줄 `\`이 전송 중 깨짐 | `set -a; source .env; set +a` 재실행 / register 명령을 **한 줄로** |
+
+### Windows 경유 전송 시 CRLF 최소화
+- **가장 깨끗:** 사내 PC에서 **fresh `git clone`** (기존 클론에 `git pull`하면 안 바뀐 파일은 CRLF 유지됨). `.gitattributes(eol=lf)`로 전부 LF가 된다.
+- 전송 시 `rsync ... --exclude '.env'` 로 서버의 정리된 `.env`를 유지.
+- 이미지 안 스크립트(deploy-app/registry.sh)는 Dockerfile이 빌드 때 자동 LF 변환 → 재빌드만 하면 된다.
 
 ## 정리
 ```bash

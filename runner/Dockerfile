@@ -16,6 +16,8 @@ RUN if ! getent group "${DOCKER_GID}" >/dev/null; then groupadd -g "${DOCKER_GID
 
 COPY scripts/lib/registry.sh /usr/local/lib/deploy/registry.sh
 COPY scripts/deploy-app /usr/local/bin/deploy-app
-RUN chmod +x /usr/local/bin/deploy-app
+# 소스가 CRLF(Windows 경유)여도 이미지 안에선 LF 보장 — shebang 'bash\r' 에러 방지
+RUN sed -i 's/\r$//' /usr/local/bin/deploy-app /usr/local/lib/deploy/registry.sh \
+ && chmod +x /usr/local/bin/deploy-app
 RUN mkdir -p /usr/local/bin/lib && \
     ln -sf /usr/local/lib/deploy/registry.sh /usr/local/bin/lib/registry.sh

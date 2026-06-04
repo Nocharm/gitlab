@@ -4,6 +4,10 @@
 
 ## 2026-06-04 (서버 배포 중 수정)
 
+- Dockerfile: COPY 후 `sed 's/\r$//'`로 이미지 안 deploy-app/registry.sh를 무조건 LF화
+  (소스가 CRLF여도 shebang `bash\r` 에러 안 나게). RUNBOOK에 `/srv/deploy` 필수 준비 단계 +
+  트러블슈팅 표(CRLF/권한/소켓/register/UI버그/orphan) 추가.
+
 - 배포 job의 docker 소켓 permission denied: 이미지가 `gitlab-runner run --user gitlab-runner`라
   **잡은 gitlab-runner(비-root) 유저로 실행** → group_add 989는 데몬에만 붙고 잡 유저엔 없음.
   → Dockerfile에서 `gitlab-runner` 유저를 호스트 docker GID 그룹에 추가(ARG DOCKER_GID),
