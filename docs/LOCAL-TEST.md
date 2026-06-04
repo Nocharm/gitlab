@@ -71,7 +71,7 @@ docker exec gitlab cat /etc/gitlab/initial_root_password   # 24시간 내 유효
    > docker exec gitlab gitlab-rails runner 'puts Ci::Runner.last.token'
    > ```
 3. `.env`의 `RUNNER_TOKEN=glrt-...` 에 붙여넣기.
-4. 러너 컨테이너 기동 + 등록:
+4. 러너 컨테이너 기동 + 등록
    ```bash
    docker compose --env-file .env -f compose/runner.compose.yml -f compose/runner.local.yml up -d --build
    set -a; source .env; set +a          # register 스크립트가 쓸 env 로드

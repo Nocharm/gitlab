@@ -22,20 +22,23 @@ Infra-as-Code 저장소.
 > ⚠️ docker 소켓 마운트 = 호스트 root 권한. 이 러너에 파이프라인을 돌릴 수 있는 사람은
 > 사실상 71서버 root 권한을 가진다. 위 가드레일로 완화한다.
 
-## 셋업 (71서버)
+## 배포 (빠른 시작)
+
+실제 호스트·포트·GID는 **`.env`에만** 둔다(커밋 금지 — `.env.example`은 placeholder).
+단계별 전체 절차·검증·트러블슈팅은 **[`docs/RUNBOOK.md`](docs/RUNBOOK.md)** 가 정본.
 
 ```bash
-cp .env.example .env          # 값 채우기 (GID는 `getent group docker`로 확인)
-docker compose --env-file .env -f compose/gitlab.compose.yml up -d   # GitLab
-docker compose --env-file .env -f compose/runner.compose.yml up -d   # Runner
-bash scripts/register_runner.sh                                      # 러너 등록
+cp .env.example .env                 # 실제 값으로 채움 (DOCKER_GID는 `getent group docker`)
+set -a; source .env; set +a
+docker compose --env-file .env -f compose/gitlab.compose.yml up -d            # GitLab (3~5분)
+# UI(Admin→CI/CD→Runners→New instance runner)에서 러너 생성 → 토큰을 .env RUNNER_TOKEN 에
+docker compose --env-file .env -f compose/runner.compose.yml up -d --build    # Runner
+bash scripts/register_runner.sh                                               # 등록 → online
 ```
 
-GitLab UI → 프로젝트/그룹 CI/CD → Runners 에서 토큰을 발급해 `.env`의 `RUNNER_TOKEN`에 넣는다.
 앱 repo에는 `examples/sample-app/.gitlab-ci.yml`을 참고한 `.gitlab-ci.yml`을 둔다.
-전체 설계는 [`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md),
-서버 검증은 [`docs/RUNBOOK.md`](docs/RUNBOOK.md), **서버 없이 로컬(mac)에서 UI 푸시→배포 시험**은
-[`docs/LOCAL-TEST.md`](docs/LOCAL-TEST.md) 참고.
+설계: [`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md) ·
+서버 없이 로컬(mac) 시험: [`docs/LOCAL-TEST.md`](docs/LOCAL-TEST.md).
 
 ## 계획된 구조
 

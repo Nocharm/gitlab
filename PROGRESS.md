@@ -2,6 +2,13 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-04 (71서버 설정 반영)
+
+- 실 배포 대상 사내 71서버 확정. 실제 호스트·포트·GID는 커밋하지 않고 서버 `.env`에만 둠
+  (security.md/config.md) — `.env.example`은 placeholder, 런북은 `.env` 참조로 동작.
+- `gitlab.compose.yml`: `nginx['listen_port']=80` + listen_https off로 external_url 포트와 분리
+  (프록시 뒤 인식 일관화) — 러너 생성 UI 에러 가설 대응이자 표준 설정. git-ssh 미사용(http clone).
+
 ## 2026-06-03 (디버깅: 러너 생성 UI 에러)
 
 - 증상: GitLab UI에서 러너 생성 클릭 시 상세(토큰) 페이지로 못 넘어가고 에러.
