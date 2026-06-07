@@ -2,6 +2,15 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-07 (서버 반영 절차 + 로그인 쇼케이스 이미지 후보)
+
+- `docs/RUNBOOK.md`: 이미 떠 있는 서버에 변경 반영하는 "git pull → `docker compose up -d`"
+  절차 추가(데이터 볼륨 보존, `--remove-orphans` 금지 명시).
+- `docs/keycloak/showcase/`: Keycloak 로그인 화면용 "connected service" 쇼케이스 썸네일
+  후보 4종(`cand-1..4.png`, 1280x800) + 2x2 대조 시트(`contact.png`) + 생성기 `gen_mocks.py`.
+  GitLab 스켈레톤(좌측 사이드바+tanuki 마크+Projects 리스트 ghost), accent/gradient/mood만 변주.
+  **선택 대기 중** — 사용자가 고른 1장만 남기고 나머지(+html/생성기)는 정리 예정.
+
 ## 2026-06-07 (Keycloak OIDC SSO 연동)
 
 - `gitlab.compose.yml`: GITLAB_OMNIBUS_CONFIG에 omniauth `openid_connect` provider 추가.

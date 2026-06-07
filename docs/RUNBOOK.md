@@ -81,6 +81,29 @@ docker exec gitlab-runner docker ps >/dev/null && echo "socket OK"             #
 기존 유저·데이터를 **건드리지 않고** 로그인 수단만 추가한다. 패스워드 로그인은 병행 유지되므로
 설정이 틀려도 락아웃되지 않는다.
 
+### 이미 떠 있는 서버에 이 변경 반영 (git pull → 재기동)
+
+서버에 이 repo가 이미 클론되어 GitLab이 돌고 있는 상태에서 적용하는 절차.
+**데이터 볼륨(`gitlab_data` 등)은 보존**되고 컨테이너만 새 설정으로 재생성된다.
+
+```bash
+cd <서버의 repo 경로>
+git fetch origin
+git checkout claude/gitlab-keycloak-integration-CwZ0s   # 머지 후라면: git checkout main && git pull origin main
+git pull origin claude/gitlab-keycloak-integration-CwZ0s
+
+# .env 는 커밋되지 않으므로 pull 로 안 바뀐다 → Keycloak 값만 직접 추가(아래 2단계)
+set -a; source .env; set +a
+
+# env/compose 변경 감지 → gitlab 컨테이너만 재생성(볼륨 유지). --remove-orphans 절대 금지
+docker compose --env-file .env -f compose/gitlab.compose.yml up -d
+docker exec gitlab gitlab-ctl status   # run: nginx/puma/... 확인
+```
+
+> Windows 경유로 `.env`가 CRLF면: `tr -d '\r' < .env > .env.new && mv .env.new .env`.
+
+### 신규 설정 (Keycloak → .env → 반영)
+
 1. **Keycloak**: realm에 client 생성(Client authentication=ON=confidential).
    Valid Redirect URIs 에 콜백 추가:
    ```
