@@ -10,6 +10,29 @@ services:
         external_url 'http://${GITLAB_HOSTNAME}:${GITLAB_HTTP_PORT}'
         nginx['listen_port'] = 80          # 내부 nginx는 80에서 listen — external 포트와 분리(프록시 뒤로 인식)
         nginx['listen_https'] = false
+        # --- Keycloak OIDC SSO (값은 .env. 패스워드 로그인은 끄지 않음 = 병행) ---
+        gitlab_rails['omniauth_enabled'] = true
+        gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']   # 미등록 유저의 자동 계정 생성 허용 provider
+        gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']         # 이메일 일치 시 기존 유저에 연결(기존 계정 보존)
+        gitlab_rails['omniauth_block_auto_created_users'] = true             # 처음 보는 외부 유저는 관리자 승인 전까지 차단(안전 기본)
+        gitlab_rails['omniauth_providers'] = [
+          {
+            name: 'openid_connect',
+            label: 'Keycloak',
+            args: {
+              issuer: '${KEYCLOAK_ISSUER}',
+              discovery: true,                       # issuer의 .well-known 에서 엔드포인트 자동 발견
+              client_auth_method: 'query',
+              uid_field: 'preferred_username',
+              scope: ['openid', 'profile', 'email'],
+              client_options: {
+                identifier: '${KEYCLOAK_CLIENT_ID}',
+                secret: '${KEYCLOAK_CLIENT_SECRET}'
+                # redirect_uri 생략 → external_url 기반으로 GitLab이 자동 구성
+              }
+            }
+          }
+        ]
     ports:
       - "${GITLAB_HTTP_PORT}:80"          # host 공개포트 → 컨테이너 nginx 80 (git clone은 http)
     volumes:

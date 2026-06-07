@@ -76,6 +76,35 @@ docker exec gitlab-runner docker ps >/dev/null && echo "socket OK"             #
    curl -s "http://localhost:$P" | head -1               # sample-app HTML
    ```
 
+## 선택: Keycloak SSO 연동 (OIDC)
+
+기존 유저·데이터를 **건드리지 않고** 로그인 수단만 추가한다. 패스워드 로그인은 병행 유지되므로
+설정이 틀려도 락아웃되지 않는다.
+
+1. **Keycloak**: realm에 client 생성(Client authentication=ON=confidential).
+   Valid Redirect URIs 에 콜백 추가:
+   ```
+   http://<GITLAB_HOSTNAME>:<GITLAB_HTTP_PORT>/users/auth/openid_connect/callback
+   ```
+   Credentials 탭에서 client secret 복사.
+2. **`.env`** 채우기(커밋 금지):
+   ```bash
+   KEYCLOAK_ISSUER=https://<keycloak>/realms/<realm>
+   KEYCLOAK_CLIENT_ID=gitlab
+   KEYCLOAK_CLIENT_SECRET=<위 secret>
+   ```
+   > ⚠️ 빈 값 줄에는 인라인 주석(`KEY=  # ...`)을 쓰지 말 것 — compose가 주석을 값으로 읽는다.
+3. **반영**(데이터 볼륨 보존, 컨테이너만 재생성):
+   ```bash
+   set -a; source .env; set +a
+   docker compose --env-file .env -f compose/gitlab.compose.yml up -d   # env 변경 감지 → 재생성
+   ```
+   GitLab 로그인 화면에 **"Keycloak"** 버튼이 뜨면 성공.
+4. **유저 동작**:
+   - 기존 유저 = 이메일이 일치하면 자동 연결(`omniauth_auto_link_user`). 계정 그대로.
+   - 처음 보는 외부 유저 = 관리자 승인 전까지 차단(`omniauth_block_auto_created_users=true`).
+     **Admin → Users**에서 승인. 이 정책을 바꾸려면 `gitlab.compose.yml`의 해당 옵션 수정.
+
 ## 6. 라이프사이클 (UI 수동 job)
 **reset**(데이터 초기화) / **destroy**(서비스만 내림, 볼륨 보존) / **purge**(완전 삭제).
 

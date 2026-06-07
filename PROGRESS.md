@@ -2,6 +2,19 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-07 (Keycloak OIDC SSO 연동)
+
+- `gitlab.compose.yml`: GITLAB_OMNIBUS_CONFIG에 omniauth `openid_connect` provider 추가.
+  왜: 기존 유저·데이터(named 볼륨)를 건드리지 않고 로그인 수단만 추가. 패스워드 로그인은
+  끄지 않아 병행 유지(설정 오류 시 락아웃 방지). `auto_link_user`로 기존 유저 이메일 매칭 연결,
+  `block_auto_created_users=true`로 신규 외부 유저는 승인 게이트.
+- 시크릿/환경값은 `.env`로 분리(`KEYCLOAK_ISSUER/CLIENT_ID/CLIENT_SECRET`), `.env.example`은
+  placeholder. **함정:** 빈 값 줄의 인라인 주석을 compose `--env-file`이 값으로 흡수 →
+  `secret: '# ...'`로 들어가던 버그를 `config` 검증으로 잡고 주석을 윗줄로 이동.
+- `docs/RUNBOOK.md`에 "선택: Keycloak SSO 연동" 절차(Keycloak client→.env→up -d→유저 동작) 추가.
+- 검증: `docker compose --env-file .env.example -f compose/gitlab.compose.yml config` valid,
+  빈 secret이 `secret: ''`로 정상 보간(부팅 영향 없음).
+
 ## 2026-06-04 (포트 충돌 처리 + 앱 배포 가이드)
 
 - deploy-app: 비-docker 프로세스가 점유한 호스트 포트로 충돌(`port is already allocated`).
