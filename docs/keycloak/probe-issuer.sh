@@ -42,16 +42,25 @@ if [ -n "$issuer" ]; then
   echo "      ${issuer}"
   echo "      -> 이 값(따옴표 안 URL)을 .env 의 KEYCLOAK_ISSUER 에 그대로."
 else
-  echo "      (아직 못 얻음 — 아래 판독 참고)"
+  echo "      (아직 못 얻음 — 아래 [E] 정체 확인)"
 fi
+
+echo "[E] 8080 정체 확인 (realm ${REALM} 이 404 라서 — 여기가 Keycloak 이긴 한가?):"
+show "master-disc"  "${KC_BASE}/realms/master/.well-known/openid-configuration"  # KC 면 항상 존재
+show "kc-admin"     "${KC_BASE}/admin/master/console/"                           # KC admin 콘솔
+show "gitlab-sign"  "${KC_BASE}/users/sign_in"                                   # GitLab 지문
+echo "      (root 302 의 redirect= 목적지도 위 [A] root 줄에서 같이 보기)"
 
 cat <<'HINT'
 
 == 판독 ==
-- [A]/[B] 'realm' 이 200 인 쪽이 정답 베이스. 둘 다 404 면 -> realm 이름이 'gitlab' 이 아님.
-- 'discovery' 가 302 이고 redirect= 가 https:// 로 가면 -> Keycloak 이 http 를 막는 중:
-    Keycloak admin -> Realm settings(gitlab) -> General -> Require SSL = None -> 저장 후 이 스크립트 재실행.
-- [D] 에서 issuer 가 나오면: .env 에 KEYCLOAK_ISSUER=<그 URL> (http 인지 확인) 후
-    set -a; source .env; set +a
-    docker compose --env-file .env -f compose/gitlab.compose.yml up -d
+- realm 'gitlab' 이 신/구 경로 모두 404 인데 리다이렉트가 http 면 -> SSL 문제 아님. 정체부터 확인:
+  * [E] master-disc 또는 kc-admin 이 200/302 -> 여기는 Keycloak 맞음.
+        그럼 이 Keycloak 에 'gitlab' realm 이 없는 것 = realm 이름 재확인 or 다른 KC 인스턴스.
+  * [E] gitlab-sign 이 200 (또는 [A] root 의 redirect= 가 /users/sign_in) -> 8080 은 'GitLab' 임!
+        Keycloak 은 다른 주소/포트에 있다. 진짜 Keycloak 의 host:port 를 찾아 KC_BASE 를 바꿔야 함.
+- 정체가 잡히면: 올바른 base 로 discovery 200 확인 -> [D] issuer 값을 .env 의 KEYCLOAK_ISSUER 에
+    (http/https 스킴 정확히) -> set -a; source .env; set +a
+    -> docker compose --env-file .env -f compose/gitlab.compose.yml up -d
 HINT
+
