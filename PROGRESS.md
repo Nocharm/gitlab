@@ -2,6 +2,12 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-07 (Keycloak issuer 탐지 헬퍼)
+
+- `docs/keycloak/probe-issuer.sh`: OIDC 로그인 SSL/경로 에러 디버그용. GitLab 컨테이너에서
+  Keycloak(`182.199.63.71:8080`, http, realm=`gitlab`) discovery를 신/구(`/auth`)
+  경로로 찔러 올바른 `KEYCLOAK_ISSUER`를 출력. 왜: 서버에서 긴 명령 옮겨치기 어려워 pull→실행용.
+
 ## 2026-06-07 (서버 반영 절차 + 로그인 쇼케이스 이미지 후보)
 
 - `docs/RUNBOOK.md`: 이미 떠 있는 서버에 변경 반영하는 "git pull → `docker compose up -d`"
