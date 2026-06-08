@@ -2,6 +2,15 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-07 (Keycloak OIDC: discovery off — http transport 강제)
+
+- 현장: issuer/로드값/광고 엔드포인트 모두 http인데도 버튼 클릭 시 GitLab이 `https://IP:8080`로
+  붙어 `SSL record layer failure` 지속(=request phase의 discovery 호출이 https로 감).
+- `gitlab.compose.yml`: `discovery: false` + `authorization/token/userinfo/jwks/end_session_endpoint`를
+  `${KEYCLOAK_ISSUER}` 기준으로 명시 → 전송 스킴이 issuer(http)와 동일하게 고정. discovery 단계 제거로
+  https 강제 경로 자체를 우회. `client_auth_method: 'query'→'basic'`(Keycloak 기본 client_secret_basic).
+  새 `.env` 값 불필요 — pull→`up -d --force-recreate`만.
+
 ## 2026-06-07 (Keycloak issuer 탐지 헬퍼)
 
 - `docs/keycloak/probe-issuer.sh`: OIDC 로그인 SSL/경로 에러 디버그용. GitLab 컨테이너에서

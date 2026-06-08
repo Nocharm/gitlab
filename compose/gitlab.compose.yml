@@ -21,13 +21,21 @@ services:
             label: 'Keycloak',
             args: {
               issuer: '${KEYCLOAK_ISSUER}',
-              discovery: true,                       # issuer의 .well-known 에서 엔드포인트 자동 발견
-              client_auth_method: 'query',
+              # discovery off: http Keycloak 에서 discovery(.well-known) 단계가 https 로 붙어
+              # 'SSL record layer failure' 나는 문제 회피. 엔드포인트를 issuer(스킴 포함) 기준으로
+              # 명시 → 전송 스킴이 issuer 와 동일(http) 보장. Keycloak 경로는 표준값.
+              discovery: false,
+              client_auth_method: 'basic',           # Keycloak 'Client Id and Secret' = client_secret_basic
               uid_field: 'preferred_username',
               scope: ['openid', 'profile', 'email'],
               client_options: {
                 identifier: '${KEYCLOAK_CLIENT_ID}',
-                secret: '${KEYCLOAK_CLIENT_SECRET}'
+                secret: '${KEYCLOAK_CLIENT_SECRET}',
+                authorization_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/auth',
+                token_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/token',
+                userinfo_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/userinfo',
+                jwks_uri: '${KEYCLOAK_ISSUER}/protocol/openid-connect/certs',
+                end_session_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/logout'
                 # redirect_uri 생략 → external_url 기반으로 GitLab이 자동 구성
               }
             }
