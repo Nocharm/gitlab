@@ -7,9 +7,9 @@ set -uo pipefail   # -e 제외: 진단이라 일부 curl 실패해도 계속 진
 
 # --- 환경 (이 서버 토폴로지) ---
 KC_BASE="http://182.199.63.71:8080"   # Keycloak (71서버, http)
-REALM="gitlab"
-# 참고: GitLab 외부 URL = g-ai-agent.sbiologics.com:2222 (Keycloak client redirect_uri /
-#       .env 의 GITLAB_HOSTNAME:GITLAB_HTTP_PORT 용. issuer 와는 별개)
+REALM="ai-portal"                     # realm 이름 (client id 'gitlab' 과 혼동 주의 — issuer 는 realm 기준)
+# 참고: client id = gitlab (.env 의 KEYCLOAK_CLIENT_ID), GitLab 외부 URL = g-ai-agent.sbiologics.com:2222
+#       (Keycloak client redirect_uri / .env 의 GITLAB_HOSTNAME:GITLAB_HTTP_PORT 용. issuer 와는 별개)
 
 ex() { docker exec gitlab bash -c "$1"; }   # curl 을 GitLab 컨테이너 안에서 실행 = 실제 OIDC 주체
 

@@ -7,8 +7,8 @@
 - `docs/keycloak/probe-issuer.sh`: OIDC 로그인 SSL/경로 에러 디버그용. GitLab 컨테이너에서
   Keycloak(`182.199.63.71:8080`, http, realm=`gitlab`) realm존재·SSL리다이렉트·issuer를 신/구(`/auth`)
   경로로 찔러 올바른 `KEYCLOAK_ISSUER`를 출력. 왜: 서버에서 긴 명령 옮겨치기 어려워 pull→실행용.
-  현장 결과 realm `gitlab`이 신/구 경로 모두 404(리다이렉트는 http) → SSL 아님. `[E]` 정체 확인
-  (master realm/kc-admin/gitlab-sign 지문) 추가해 8080이 Keycloak인지 GitLab인지 가리도록 보강.
+  현장 결과 realm `gitlab` 404 → 원인은 realm명 혼동: **realm=`ai-portal`, `gitlab`은 client id**.
+  스크립트 `REALM=ai-portal`로 교정. issuer는 `http://182.199.63.71:8080/realms/ai-portal` 예상.
 
 ## 2026-06-07 (서버 반영 절차 + 로그인 쇼케이스 이미지 후보)
 
