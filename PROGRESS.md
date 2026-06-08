@@ -2,6 +2,15 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-06-07 (Keycloak OIDC: redirect_uri 명시)
+
+- 현장: SSL 해결 후 Keycloak에서 `Invalid parameter: redirect_uri`. 주소창 auth 요청에
+  `redirect_uri` 파라미터가 아예 없음 = GitLab이 미전송(`discovery:false`에선 omniauth가
+  external_url 기반 자동생성을 안 함). Keycloak 등록 문제 아님.
+- `gitlab.compose.yml`: `client_options.redirect_uri`를
+  `http://${GITLAB_HOSTNAME}:${GITLAB_HTTP_PORT}/users/auth/openid_connect/callback`로 명시.
+  새 `.env` 값 불필요 — pull→`up -d --force-recreate`.
+
 ## 2026-06-07 (Keycloak OIDC: discovery off — http transport 강제)
 
 - 현장: issuer/로드값/광고 엔드포인트 모두 http인데도 버튼 클릭 시 GitLab이 `https://IP:8080`로

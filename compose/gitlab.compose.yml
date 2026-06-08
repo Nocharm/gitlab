@@ -31,12 +31,12 @@ services:
               client_options: {
                 identifier: '${KEYCLOAK_CLIENT_ID}',
                 secret: '${KEYCLOAK_CLIENT_SECRET}',
+                redirect_uri: 'http://${GITLAB_HOSTNAME}:${GITLAB_HTTP_PORT}/users/auth/openid_connect/callback',
                 authorization_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/auth',
                 token_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/token',
                 userinfo_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/userinfo',
                 jwks_uri: '${KEYCLOAK_ISSUER}/protocol/openid-connect/certs',
                 end_session_endpoint: '${KEYCLOAK_ISSUER}/protocol/openid-connect/logout'
-                # redirect_uri 생략 → external_url 기반으로 GitLab이 자동 구성
               }
             }
           }
