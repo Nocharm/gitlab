@@ -8,7 +8,9 @@
   Keycloak(`182.199.63.71:8080`, http, realm=`gitlab`) realm존재·SSL리다이렉트·issuer를 신/구(`/auth`)
   경로로 찔러 올바른 `KEYCLOAK_ISSUER`를 출력. 왜: 서버에서 긴 명령 옮겨치기 어려워 pull→실행용.
   현장 결과 realm `gitlab` 404 → 원인은 realm명 혼동: **realm=`ai-portal`, `gitlab`은 client id**.
-  스크립트 `REALM=ai-portal`로 교정. issuer는 `http://182.199.63.71:8080/realms/ai-portal` 예상.
+  스크립트 `REALM=ai-portal`로 교정. 클릭 시 동일 SSL 에러 지속 → `[F]` 적용상태 점검 추가
+  (.env값 / GitLab이 로드한 issuer / discovery 엔드포인트 스킴): up -d 미반영 vs Keycloak이
+  https 엔드포인트 광고를 구분. KEYCLOAK_ISSUER는 discovery의 `issuer` 문자열과 글자 그대로 일치해야 함.
 
 ## 2026-06-07 (서버 반영 절차 + 로그인 쇼케이스 이미지 후보)
 

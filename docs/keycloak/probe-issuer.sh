@@ -51,16 +51,31 @@ show "kc-admin"     "${KC_BASE}/admin/master/console/"                          
 show "gitlab-sign"  "${KC_BASE}/users/sign_in"                                   # GitLab 지문
 echo "      (root 302 의 redirect= 목적지도 위 [A] root 줄에서 같이 보기)"
 
+echo "[F] 적용 상태 점검 (여전히 https 로 붙는 원인):"
+echo "  (1) .env 값 (secret 제외):"
+grep -E '^KEYCLOAK_(ISSUER|CLIENT_ID)=' .env 2>/dev/null | sed 's/^/      /' || echo "      (.env 못 읽음 — repo 루트에서 실행)"
+echo "  (2) GitLab 이 실제 로드한 issuer (= up -d 반영 여부):"
+loaded="$(docker exec gitlab bash -c "grep -i issuer /var/opt/gitlab/gitlab-rails/etc/gitlab.yml 2>/dev/null" 2>/dev/null)"
+[ -n "$loaded" ] && echo "$loaded" | sed 's/^/      /' || echo "      (못 찾음 — 아직 reconfigure 안 됐거나 provider 미적용)"
+echo "  (3) discovery 가 광고하는 엔드포인트 스킴(http/https):"
+ex "curl -sSL -m8 '${KC_BASE}/realms/${REALM}/.well-known/openid-configuration'" 2>/dev/null \
+  | tr ',{' '\n\n' \
+  | grep -E '"(issuer|authorization_endpoint|token_endpoint|userinfo_endpoint|jwks_uri)"[[:space:]]*:' \
+  | sed 's/^/      /'
+
 cat <<'HINT'
 
 == 판독 ==
-- realm 'gitlab' 이 신/구 경로 모두 404 인데 리다이렉트가 http 면 -> SSL 문제 아님. 정체부터 확인:
-  * [E] master-disc 또는 kc-admin 이 200/302 -> 여기는 Keycloak 맞음.
-        그럼 이 Keycloak 에 'gitlab' realm 이 없는 것 = realm 이름 재확인 or 다른 KC 인스턴스.
-  * [E] gitlab-sign 이 200 (또는 [A] root 의 redirect= 가 /users/sign_in) -> 8080 은 'GitLab' 임!
-        Keycloak 은 다른 주소/포트에 있다. 진짜 Keycloak 의 host:port 를 찾아 KC_BASE 를 바꿔야 함.
-- 정체가 잡히면: 올바른 base 로 discovery 200 확인 -> [D] issuer 값을 .env 의 KEYCLOAK_ISSUER 에
-    (http/https 스킴 정확히) -> set -a; source .env; set +a
-    -> docker compose --env-file .env -f compose/gitlab.compose.yml up -d
+- realm 'ai-portal' discovery 가 200 인데 GitLab 은 여전히 https 로 붙어 깨지면:
+  * [F](2) 가 비어있거나 예전 https 값 -> .env 편집 후 'up -d' 를 안/잘못 돌린 것.
+        반드시: set -a; source .env; set +a
+                docker compose --env-file .env -f compose/gitlab.compose.yml up -d   (Recreating gitlab 확인, 3~5분)
+  * [F](3) 의 endpoint 가 https://182.199.63.71:8080/... 로 광고됨 -> 진짜 원인.
+        issuer 를 http 로 둬도 GitLab 은 token/userinfo 를 https:8080 으로 붙어 'record layer failure'.
+        => 해결은 Keycloak 쪽: 이 KC 가 광고하는 'issuer'(=[F](3) 의 issuer) 를 그대로 KEYCLOAK_ISSUER 에 쓰고,
+           GitLab 이 그 주소(스킴 포함)로 실제 도달 가능해야 함. KC 가 https 공개 URL 이면 그 https URL 을,
+           http 백엔드면 KC hostname 설정을 http 로 맞춰야 함(인프라/KC 관리자 조정).
+- 즉 KEYCLOAK_ISSUER 는 'IP:8080 추측' 이 아니라 [F](3) 가 광고하는 issuer 문자열과 '글자 그대로' 같아야 함.
 HINT
+
 
