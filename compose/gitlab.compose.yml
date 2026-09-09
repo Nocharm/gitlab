@@ -12,8 +12,8 @@ services:
         nginx['listen_https'] = false
         # --- Puma: 워커 수 고정(자동 산정 off) ---
         # 자동 산정은 호스트 코어 수를 따라가 워커가 과다 생성된다. 워커당 RSS ~1GB+ 라
-        # 서버 메모리가 위험 수준까지 올라가서, 코어 수와 무관하게 12로 고정한다.
-        puma['worker_processes'] = 12
+        # 서버 메모리가 위험 수준까지 올라가서, 코어 수와 무관하게 8로 고정한다.
+        puma['worker_processes'] = 8
         # --- Keycloak OIDC SSO (값은 .env. 패스워드 로그인은 끄지 않음 = 병행) ---
         gitlab_rails['omniauth_enabled'] = true
         gitlab_rails['omniauth_allow_single_sign_on'] = ['openid_connect']   # 미등록 유저의 자동 계정 생성 허용 provider

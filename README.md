@@ -38,13 +38,13 @@ bash scripts/register_runner.sh                                               # 
 
 ### 리소스 튜닝 (Puma 워커)
 
-GitLab Puma 워커는 **12개 고정**이다(`compose/gitlab.compose.yml`의 `puma['worker_processes']`).
+GitLab Puma 워커는 **8개 고정**이다(`compose/gitlab.compose.yml`의 `puma['worker_processes']`).
 자동 산정은 호스트 코어 수를 따라가 워커가 과다 생성되고, 워커당 RSS가 ~1GB+ 라 서버 메모리가
 위험 수준까지 올라갔다. 변경 반영과 확인:
 
 ```bash
 docker compose --env-file .env -f compose/gitlab.compose.yml up -d   # 재구성 3~5분, 데이터 볼륨 보존
-docker exec gitlab grep -i '^workers' /var/opt/gitlab/gitlab-rails/etc/puma.rb   # workers 12
+docker exec gitlab grep -i '^workers' /var/opt/gitlab/gitlab-rails/etc/puma.rb   # workers 8
 ```
 
 **앱 팀이 자기 프로젝트를 자동 배포하려면** → [`docs/APP-DEPLOY-GUIDE.md`](docs/APP-DEPLOY-GUIDE.md)
