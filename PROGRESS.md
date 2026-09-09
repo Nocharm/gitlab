@@ -2,6 +2,15 @@
 
 프로젝트 진행 현황 로그. 커밋 직전 갱신한다 (`rules/common/git.md` 규칙).
 
+## 2026-09-09 (Puma 워커 12개 고정)
+
+- 현장: 서버 메모리 사용량이 위험 수준. Puma 워커가 자동 산정(호스트 코어 수 기반)이라
+  코어가 많은 71서버에서 워커가 과다 생성되고, 워커당 RSS ~1GB+ 로 메모리를 잠식.
+- `gitlab.compose.yml`: `puma['worker_processes'] = 12` 로 고정(자동 산정 off).
+  새 `.env` 값 없이 하드코딩 — 이 repo는 단일 서버 전용이고 배포마다 바뀌는 값이 아님.
+  반영은 pull → `up -d`(데이터 볼륨 보존).
+- `README.md`: "리소스 튜닝 (Puma 워커)" 절 추가 — 고정 이유와 반영·확인 명령.
+
 ## 2026-06-07 (Keycloak OIDC: redirect_uri 명시)
 
 - 현장: SSL 해결 후 Keycloak에서 `Invalid parameter: redirect_uri`. 주소창 auth 요청에

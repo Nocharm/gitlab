@@ -36,6 +36,17 @@ docker compose --env-file .env -f compose/runner.compose.yml up -d --build    # 
 bash scripts/register_runner.sh                                               # 등록 → online
 ```
 
+### 리소스 튜닝 (Puma 워커)
+
+GitLab Puma 워커는 **12개 고정**이다(`compose/gitlab.compose.yml`의 `puma['worker_processes']`).
+자동 산정은 호스트 코어 수를 따라가 워커가 과다 생성되고, 워커당 RSS가 ~1GB+ 라 서버 메모리가
+위험 수준까지 올라갔다. 변경 반영과 확인:
+
+```bash
+docker compose --env-file .env -f compose/gitlab.compose.yml up -d   # 재구성 3~5분, 데이터 볼륨 보존
+docker exec gitlab grep -i '^workers' /var/opt/gitlab/gitlab-rails/etc/puma.rb   # workers 12
+```
+
 **앱 팀이 자기 프로젝트를 자동 배포하려면** → [`docs/APP-DEPLOY-GUIDE.md`](docs/APP-DEPLOY-GUIDE.md)
 (템플릿: [`examples/gitlab-ci.template.yml`](examples/gitlab-ci.template.yml)).
 설계: [`docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md`](docs/superpowers/specs/2026-06-03-gitlab-docker-ci-deploy-design.md) ·
